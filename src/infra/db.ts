@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless"
+import { Pool } from "pg"
 import { env } from "@/infra/env"
-export const sql = neon(env.DB_URL)
-export const query = async <T>(text: string, params: unknown[] = []) => (await sql.query(text, params)) as unknown as T[]
+export const pool = new Pool({ connectionString: env.DB_URL, max: 5 })
+export const query = async <T>(text: string, params: unknown[] = []): Promise<T[]> => (await pool.query(text, params)).rows

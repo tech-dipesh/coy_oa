@@ -1,4 +1,4 @@
-import { sql } from "@/infra/db"
+import { pool } from "@/infra/db"
 import profiles from "@/discover/profiles.json"
 const ddl = [
   "drop table if exists matches, swipes, likes_me, profiles",
@@ -9,11 +9,20 @@ const ddl = [
 ]
 async function main() {
   const likes = profiles.flatMap(({ id, likesMe }) => (likesMe ? [{ id, ...likesMe }] : []))
-  await sql.transaction([
-    ...ddl.map((text) => sql.query(text)),
-    sql.query("insert into profiles select * from json_populate_recordset(null::profiles, $1::json)", [JSON.stringify(profiles)]),
-    sql.query("insert into likes_me select id, intent, note from json_to_recordset($1::json) as x(id int, intent text, note text)", [JSON.stringify(likes)]),
-  ])
+  const client = await pool.connect()
+  try {
+    await client.query("begin")
+    for (const text of ddl) await client.query(text)
+    await client.query("insert into profiles select * from json_populate_recordset(null::profiles, $1::json)", [JSON.stringify(profiles)])
+    await client.query("insert into likes_me select id, intent, note from json_to_recordset($1::json) as x(id int, intent text, note text)", [JSON.stringify(likes)])
+    await client.query("commit")
+  } catch (err) {
+    await client.query("rollback")
+    throw err
+  } finally {
+    client.release()
+    await pool.end()
+  }
   console.log(`seeded ${profiles.length} profiles, ${likes.length} already like you`)
 }
 main()
