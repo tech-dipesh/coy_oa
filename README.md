@@ -4,7 +4,8 @@
 - Sealed note: one optional line, up to 120 characters, written when you like someone.
 - Intent: every like carries one of three levels, getting to know each other, dating or something long-term.
 - The "It's a match!" screen and a Matches list show both notes and both intents.
-
+<img src="discover.png" alt="discover" width="280">
+<img src="next.png" alt="like popup" width="280">
 ## Quick start
 
 ```bash
